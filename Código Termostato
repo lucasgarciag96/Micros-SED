@@ -1,0 +1,108 @@
+/* USER CODE BEGIN 0 */
+volatile int done = 0;
+int ADC_val = 0;
+int temperatura = 20;
+int Tiempo = 0;
+int Count_max = 1000000;
+int Contador;
+int i;
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	done = 1;
+	Contador = Count_max; //Esto resetea el contador. En la aplicacion ningun proceso va a tardar mas de 10.000ms
+
+}
+void SysTick_Handler(void) //Handler del SysTick, se ejecuta cada 1ms.
+{
+  /* USER CODE BEGIN SysTick_IRQn 0 */
+
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
+  HAL_SYSTICK_IRQHandler();
+  /* USER CODE BEGIN SysTick_IRQn 1 */
+	if (Contador > 0)
+	{
+		Contador--;
+	}
+	else
+	{
+		Contador = Count_max;
+	}
+	/* USER CODE END SysTick_IRQn 1 */
+}
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  *
+  * @retval None
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
+	Contador = Count_max;
+	SysTick_Config(SystemCoreClock/16000); //configuracion del systick para ejecutar el Handler correspondiente cada 1ms.
+  /* USER CODE END 1 */
+
+  /* MCU Configuration----------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  HAL_Init();
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+
+  /* USER CODE BEGIN SysInit */
+
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_ADC1_Init();
+  /* USER CODE BEGIN 2 */
+	
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+
+  while (1)
+  {
+    /* USER CODE END WHILE */
+    /* USER CODE END WHILE */
+		 HAL_ADC_Start(&hadc1);
+		if (HAL_ADC_PollForConversion(&hadc1, 10000000)==HAL_OK)
+		{
+		 ADC_val=HAL_ADC_GetValue(&hadc1);
+		}
+		HAL_ADC_Stop(&hadc1);
+		
+		if (done == 1){
+			temperatura = temperatura + 5;
+			if(temperatura == 60){
+				temperatura = 15;
+			};
+			HAL_Delay(100);
+			done = 0;
+		};
+		if (ADC_val < temperatura) {
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
+		  Tiempo = (Count_max - Contador)/1000;
+
+		}
+		else{ 
+			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+			i=Contador;
+			while(i-(uint32_t)Contador <1000){} //un delay sin usar HAL_Delay() para ver el tiempo que se ha tardado.
+		}
+		
+    /* USER CODE BEGIN 3 */
+  
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
+}
